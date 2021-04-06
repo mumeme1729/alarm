@@ -3,9 +3,9 @@ from pathlib import Path
 import subprocess
 import datetime
 import requests
-from bs4 import BeautifulSoup
 import pickle
 import os.path
+import json
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request 
@@ -22,9 +22,8 @@ class Alarm:
         self.BASE_DIR = Path(__file__).resolve().parent
         self.now = datetime.datetime.now()
         self.date=""
-        self.today_weather=""
-        self.time_W=""
-        self.today_temp=""
+        self.todays_weather=""
+        self.temp_max=""
         self.plans=""
 
         time.sleep(2)
@@ -33,50 +32,35 @@ class Alarm:
 
 
     def set_weather(self):
-        #　tenki.jpさんのURL 以下長野県上田市のURL
-        url = 'https://tenki.jp/forecast/3/23/4820/20203/' 
-        r = requests.get(url)
-        bsObj = BeautifulSoup(r.content,"html.parser")
-        today = bsObj.find(class_="today-weather")
-        weather = today.p.string
-        temp = today.div.find(class_="date-value-wrap")
-        temp=temp.find_all("dd")
-        temp_max = temp[0].span.string #最高気温
-
-        #降水確率(4つとも0%なら0、0以外の時間帯があるならそれを読み上げる)
-        rain_probability = bsObj.find(class_="rain-probability")
-        today_rain=[]
-        for rain in rain_probability:
-            if not '\n'in rain:
-                today_rain.append(str(rain))
-        check_rain=[]
-        for rain in today_rain:
-            a=re.findall(r'\d+',rain)
-            if len(a)!=0:
-                check_rain.append(int(a[0]))
-            else:
-                check_rain.append(0)
-        check_rain.pop(0)
-        today_time={0:"0時から6時、",1:"６時から12時、",2:"12時から18時、",3:"18時から24時、"}
-        self.time_W="降水確率は、"
-        flag=0
-        for i in range(len(check_rain)):
-            rain_time="{}:{}".format(i,check_rain[i])
-            print(rain_time)
-            if check_rain[i]!=0:
-                self.time_W+=today_time[i]
-                self.time_W+=str(check_rain[i])+"%、"
-                flag+=1
-        if flag == 0:
-            self.time_W+="終日0%でス"
-
+        apiKey = "apiキー"
+        base = "https://api.openweathermap.org/data/2.5/forecast?" 
+        url = base + "appid=" + apiKey + "&q=" + "地名"+"&lang=ja"
+        response = requests.get(url)
+        data = response.json() 
         
-        week={0:"月曜日",1:"火曜日",2:"水曜日",3:"木曜日",4:"金曜日",5:"土曜日",6:"日曜日"}
+        if data["cod"] != "404": 
+            city=data["city"]["name"]
+            temp_max=0
+            todays_weather=[]
+            todays_pop=[]
 
-        self.date=str(self.now.month)+"月"+str(self.now.day)+"日"+str(week[self.now.weekday()])
-        self.today_weather="今日の天気は{}で_ス".format(weather)
-        self.today_temp="最高気温は{}どで".format(temp_max)
-
+            for weather in data['list'][1:7]:
+                if(weather['main']['temp_max']>temp_max):
+                    temp_max=weather['main']['temp_max']
+                todays_weather.append(weather['weather'][0]['description'])
+                todays_pop.append(round(weather['pop']*100))
+            temp_max=round(temp_max-273.15)
+            week={0:"月曜日",1:"火曜日",2:"水曜日",3:"木曜日",4:"金曜日",5:"土曜日",6:"日曜日"}
+            self.date=str(self.now.month)+"月"+str(self.now.day)+"日"+str(week[self.now.weekday()])
+            weather_am=f"今日の{city}の午前中の天気は{todays_weather[1]}、降水確率は{todays_pop[1]}%、"
+            weather_pm=f"午後の天気は{todays_weather[3]}、降水確率は{todays_pop[3]}%"
+            self.todays_weather=weather_am+weather_pm
+            self.temp_max=f"最高気温は{temp_max}ど"
+        else: 
+            print("都市名がみつかりませんでした。") 
+            
+        
+        
 
     def set_google_calendar_schedule(self):
         SCOPES = ['https://www.googleapis.com/auth/calendar']
@@ -147,7 +131,7 @@ class Alarm:
             self.plans="今日の予定は特にありません"  
 
     def start_softolk(self):
-        gr=["おはようございま_ス",self.date,self.today_weather,self.time_W,self.today_temp,self.plans]
+        gr=["おはようございま_ス",self.date,self.todays_weather,self.temp_max,self.plans]
         _start = f"start {BASE_DIR}\\softalk\\SofTalk.exe /X:1"
         _speed = "/S:80"
         _word = "/W:"
