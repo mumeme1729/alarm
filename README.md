@@ -13,7 +13,7 @@ https://openweathermap.org/  でアカウントを作成し、APIキーを取得
 
 また、Googleカレンダーapiで取得したJSONファイルを用いることで予定を取得できます。  
 BGMに曲を流したい場合、図の箇所にパスを指定してください。かけない場合は""に設定します。  
-<img src="https://user-images.githubusercontent.com/28708899/113669703-16467b00-96ef-11eb-9cc5-5e8a4b8858b4.jpg" widht="380px">
-
+<img src="https://user-images.githubusercontent.com/28708899/113669703-16467b00-96ef-11eb-9cc5-5e8a4b8858b4.jpg" widht="380px">  
+<img src="https://user-images.githubusercontent.com/28708899/113670045-91a82c80-96ef-11eb-83e2-a8bee6897b2d.jpg" width="380px">
 
 あとはタスクスケジューラ等で起動をセットすることで目覚ましとして使用できると思います。  
